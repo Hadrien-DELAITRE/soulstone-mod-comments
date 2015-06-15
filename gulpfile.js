@@ -15,6 +15,7 @@ var eslint = require('gulp-eslint');
 var fs = Promise.promisifyAll(require('fs'));
 var gulp = require('gulp');
 var gutil = require('gulp-util');
+var mocha = require('gulp-mocha');
 var plumber = require('gulp-plumber');
 var prepend = require('gulp-insert').prepend;
 var sourcemaps = require('gulp-sourcemaps');
@@ -22,7 +23,7 @@ var sourcemaps = require('gulp-sourcemaps');
 var readPrelude = fs.readFileAsync('./__prelude.js');
 
 function lint() {
-  return gulp.src('src/**/*.js')
+  return gulp.src(['src/**/*.js', 'src/**/*.jsx'])
   .pipe(plumber())
   .pipe(eslint())
   .pipe(eslint.format());
@@ -30,7 +31,7 @@ function lint() {
 
 function build() {
   return readPrelude.then(function(prelude) {
-    return gulp.src('src/**/*.js')
+    return gulp.src(['src/**/*.js', 'src/**/*.jsx'])
     .pipe(plumber())
     .pipe(prepend(prelude))
     .pipe(babel({
@@ -45,6 +46,13 @@ function build() {
   });
 }
 
+function test() {
+  return gulp.src('dist/**/__tests__/**/*.js')
+    .pipe(mocha())
+    .once('error', process.exit.bind(process, 1))
+    .once('end', process.exit.bind(process));
+}
+
 function clean() {
   del(['dist']);
 }
@@ -52,4 +60,5 @@ function clean() {
 gulp.task('lint', lint);
 gulp.task('clean', clean);
 gulp.task('build', ['lint', 'clean'], build);
+gulp.task('test', ['build'], test);
 gulp.task('default', ['build']);

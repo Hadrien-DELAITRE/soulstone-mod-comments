@@ -1,37 +1,45 @@
 {
-  "name": "es6-starterkit",
+  "name": "soulstone-mod-gen",
   "version": "0.0.0",
   "description": "",
-  "homepage": "https://github.com/elierotenberg/es6-starterkit",
-  "bugs": "https://github.com/elierotenberg/es6-starterkit/issues",
+  "homepage": "https://github.com/WebediaGaming/soulstone-mod-gen",
+  "bugs": "https://github.com/elierotenberg/soulstone-mod-gen/issues",
   "license": "MIT",
   "author": "Elie Rotenberg <elie@rotenberg.io>",
   "main": "dist/index.js",
+  "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/elierotenberg/es6-starterkit.git"
+    "url": "https://github.com/elierotenberg/soulstone-mod-gen.git"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "gulp test"
   },
   "dependencies": {
-    "babel": "^5.5.5",
-    "babel-runtime": "^5.5.5",
-    "bluebird": "^2.9.27",
+    "babel": "^5.5.8",
+    "babel-runtime": "^5.5.8",
+    "bluebird": "^2.9.30",
     "lodash": "^3.9.3",
+    "nexus-flux": "^3.4.4",
+    "nexus-flux-socket.io": "^2.6.0",
+    "react": "^0.13.3",
+    "react-nexus": "^3.4.0",
+    "remutable": "^1.1.1",
     "should": "^6.0.3"
   },
   "devDependencies": {
-    "babel-eslint": "^3.1.14",
+    "babel-eslint": "^3.1.15",
     "del": "^1.2.0",
-    "eslint": "^0.22.1",
-    "eslint-plugin-react": "^2.5.0",
+    "eslint": "^0.23.0",
+    "eslint-plugin-react": "^2.5.2",
     "gulp": "^3.9.0",
     "gulp-babel": "^5.1.0",
     "gulp-eslint": "^0.13.2",
     "gulp-insert": "^0.4.0",
+    "gulp-mocha": "^2.1.1",
     "gulp-plumber": "^1.0.1",
     "gulp-sourcemaps": "^1.5.2",
-    "gulp-util": "^3.0.5"
+    "gulp-util": "^3.0.5",
+    "mocha": "^2.2.5"
   }
 }
