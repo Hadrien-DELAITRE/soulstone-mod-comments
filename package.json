@@ -3,14 +3,14 @@
   "version": "0.0.0",
   "description": "",
   "homepage": "https://github.com/WebediaGaming/soulstone-mod-gen",
-  "bugs": "https://github.com/elierotenberg/soulstone-mod-gen/issues",
+  "bugs": "https://github.com/WebediaGaming/soulstone-mod-gen/issues",
   "license": "MIT",
   "author": "Elie Rotenberg <elie@rotenberg.io>",
   "main": "dist/index.js",
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/elierotenberg/soulstone-mod-gen.git"
+    "url": "https://github.com/WebediaGaming/soulstone-mod-gen.git"
   },
   "scripts": {
     "test": "gulp test"
