@@ -1,4 +1,4 @@
-import FluxCommentsSocketIOServer from '../comments/server';
+import FluxCommentsSocketIOServer from '../../comments/server';
 import config from './config';
 
 const configFlux = {
@@ -19,3 +19,5 @@ const configFlux = {
 };
 
 const fluxCommentsSocketIOServer = new FluxCommentsSocketIOServer(configFlux);
+
+export default fluxCommentsSocketIOServer;

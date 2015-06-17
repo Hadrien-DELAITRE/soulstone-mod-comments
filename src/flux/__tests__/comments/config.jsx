@@ -1,5 +1,6 @@
 import millenium from 'millenium-shared';
-import secrets from '../../../node_modules/millenium-shared/dist/internal-secrets';
+import secrets from '../../../../node_modules/millenium-shared/dist/internal-secrets';
+import _ from 'lodash';
 
 const mode = process.env.MILLENIUM_MODE || 'local';
 const https = mode === 'beta' || mode === 'prod';

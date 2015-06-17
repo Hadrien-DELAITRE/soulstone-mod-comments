@@ -7,6 +7,9 @@ import query from 'pg-query';
 import pgFormat from 'pg-format';
 import Router from 'isomorphic-router';
 import morgan from 'morgan';
+import Promise from 'bluebird';
+const __DEV__ = (process.env.NODE_ENV === 'development');
+
 
 /**
 * Creates the millenium-comment-flux SocketIOServer

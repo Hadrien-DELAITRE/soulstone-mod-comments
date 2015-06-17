@@ -20,11 +20,15 @@ var _nexusFluxSocketIoServer = require('nexus-flux-socket.io/server');
 
 var _nexusFluxSocketIoServer2 = _interopRequireDefault(_nexusFluxSocketIoServer);
 
+var _actions = require('./actions');
+
+var _actions2 = _interopRequireDefault(_actions);
+
+var _redis = require('./redis');
+
+var _redis2 = _interopRequireDefault(_redis);
+
 var _nexusFlux = require('nexus-flux');
-
-var _config = require('./config');
-
-var _config2 = _interopRequireDefault(_config);
 
 var _pg = require('pg');
 
@@ -58,12 +62,6 @@ if (__DEV__) {
   Error.stackTraceLimit = Infinity;
 }
 
-// configures Pool Size about database connections
-var fluxSQL = _config2['default'].comments['flux-sql'];
-_pg2['default'].defaults.poolSize = fluxSQL.poolSize;
-_pgQuery2['default'].connectionParameters = '' + fluxSQL.type + '://' + fluxSQL.local + ':' + fluxSQL.secret + '@' + fluxSQL.host + '/' + fluxSQL.local;
-_pgQuery2['default'].pg = _pg2['default'];
-
 /**
 * Creates the millenium-comment-flux SocketIOServer
 * Will allow to query the postgresql database in order to fetch specific from requested path
@@ -80,22 +78,27 @@ var SocketIOServerImpl = (function (_SocketIOServer) {
   * @param {number} port The listening port
   */
 
-  function SocketIOServerImpl(port) {
+  function SocketIOServerImpl(_ref) {
     var _this = this;
+
+    var port = _ref.port;
+    var postgresql = _ref.postgresql;
+    var logger = _ref.logger;
+    var sso = _ref.sso;
+    var redis = _ref.redis;
 
     _classCallCheck(this, SocketIOServerImpl);
 
-    var expressUse = _config2['default'].logger ? [(0, _morgan2['default'])(_config2['default'].logger)] : [];
+    var expressUse = logger ? [(0, _morgan2['default'])(logger)] : [];
     _get(Object.getPrototypeOf(SocketIOServerImpl.prototype), 'constructor', this).call(this, port, void 0, void 0, void 0, expressUse);
 
     // init versioning
-    this.actionPostgresql = '' + _config2['default'].macros.__ACTION__ + '' + _config2['default'].macros.__VERSION__;
-    this.actionEditsPostgresql = '' + _config2['default'].macros.__ACTION_EDITS__ + '' + _config2['default'].macros.__VERSION__;
-    this.actionVotesPostgresql = '' + _config2['default'].macros.__ACTION_VOTES__ + '' + _config2['default'].macros.__VERSION__;
-    this.actionReportsPostgresql = '' + _config2['default'].macros.__ACTION_REPORTS__ + '' + _config2['default'].macros.__VERSION__;
-    this.actionV7V8ThreadsPostgresql = '' + _config2['default'].macros.__ACTION_V7V8THREADS__ + '' + _config2['default'].macros.__VERSION__;
-    this.fetchCommentsPage = '' + _config2['default'].macros.__FETCH_PAGE__ + '' + _config2['default'].macros.__VERSION__;
-    this.fetchCommentsReplies = '' + _config2['default'].macros.__FETCH_REPLIES__ + '' + _config2['default'].macros.__VERSION__;
+    this.initPostgresql(postgresql);
+
+    var actionDescriptor = new _actions2['default'](sso);
+    var redisDescriptor = new _redis2['default'](redis, actionDescriptor.getActions());
+    redisDescriptor.initSubscribe(this);
+    redisDescriptor.initPublish(this);
 
     // init empty json query
     this.jsonQuery = {};
@@ -110,8 +113,8 @@ var SocketIOServerImpl = (function (_SocketIOServer) {
     }
 
     // configure routes
-    this.router = new _isomorphicRouter2['default']().on('/comments/threads/:threadId', function (_ref) {
-      var threadId = _ref.threadId;
+    this.router = new _isomorphicRouter2['default']().on('/comments/threads/:threadId', function (_ref2) {
+      var threadId = _ref2.threadId;
 
       var path = '/comments/threads/' + threadId;
       var params = {};
@@ -125,8 +128,8 @@ var SocketIOServerImpl = (function (_SocketIOServer) {
       var columnKeys = {};
       columnKeys.thread_id = 'thread_id';
       return _this.buildQuery('threads', columnKeys, params, path);
-    }).on('/comments/threads/:threadId/comments', function (_ref2) {
-      var threadId = _ref2.threadId;
+    }).on('/comments/threads/:threadId/comments', function (_ref3) {
+      var threadId = _ref3.threadId;
 
       var path = '/comments/threads/' + threadId + '/comments';
       var params = {};
@@ -134,45 +137,45 @@ var SocketIOServerImpl = (function (_SocketIOServer) {
       params.thread_id = parseInt(threadId, 10);
       columnKeys.comment_id = 'comment_id';
       return _this.buildQuery('comments', columnKeys, params, path);
-    }).on('/comments/comment/:commentId/replies', function (_ref3) {
-      var commentId = _ref3.commentId;
+    }).on('/comments/comment/:commentId/replies', function (_ref4) {
+      var commentId = _ref4.commentId;
 
       var path = '/comments/comment/' + commentId + '/replies';
       var params = [parseInt(commentId, 10)];
       return _this.queryFetch(path, params, _this.fetchCommentsReplies);
-    }).on('/comments/threads/:threadId/comments/:pageId', function (_ref4) {
-      var threadId = _ref4.threadId;
-      var pageId = _ref4.pageId;
+    }).on('/comments/threads/:threadId/comments/:pageId', function (_ref5) {
+      var threadId = _ref5.threadId;
+      var pageId = _ref5.pageId;
 
       var path = '/comments/threads/' + threadId + '/comments/' + pageId;
       var params = [parseInt(threadId, 10), parseInt(pageId, 10)];
       return _this.queryFetch(path, params, _this.fetchCommentsPage);
-    }).on('/comments/threads/:threadId/edits', function (_ref5) {
-      var threadId = _ref5.threadId;
+    }).on('/comments/threads/:threadId/edits', function (_ref6) {
+      var threadId = _ref6.threadId;
 
       var path = '/comments/threads/' + threadId + '/edits';
       var params = [parseInt(threadId, 10)];
       return _this.queryFetch(path, params, _this.actionEditsPostgresql);
-    }).on('/comments/threads/:threadId/votes', function (_ref6) {
-      var threadId = _ref6.threadId;
+    }).on('/comments/threads/:threadId/votes', function (_ref7) {
+      var threadId = _ref7.threadId;
 
       var path = '/comments/threads/' + threadId + '/votes';
       var params = [parseInt(threadId, 10)];
       return _this.queryFetch(path, params, _this.actionVotesPostgresql);
-    }).on('/comments/threads/:threadId/reports', function (_ref7) {
-      var threadId = _ref7.threadId;
+    }).on('/comments/threads/:threadId/reports', function (_ref8) {
+      var threadId = _ref8.threadId;
 
       var path = '/comments/threads/' + threadId + '/reports';
       var params = [parseInt(threadId, 10)];
       return _this.queryFetch(path, params, _this.actionReportsPostgresql);
-    }).on('/comments/v7v8Threads/:v7ThreadId', function (_ref8) {
-      var v7ThreadId = _ref8.v7ThreadId;
+    }).on('/comments/v7v8Threads/:v7ThreadId', function (_ref9) {
+      var v7ThreadId = _ref9.v7ThreadId;
 
       var path = '/comments/v7v8Threads/' + v7ThreadId;
       var params = [parseInt(v7ThreadId, 10)];
       return _this.queryFetch(path, params, _this.actionV7V8ThreadsPostgresql);
-    }).on('/comments/users/:userId', function (_ref9) {
-      var userId = _ref9.userId;
+    }).on('/comments/users/:userId', function (_ref10) {
+      var userId = _ref10.userId;
 
       var path = '/comments/users/' + userId;
       var params = {};
@@ -193,6 +196,23 @@ var SocketIOServerImpl = (function (_SocketIOServer) {
   _inherits(SocketIOServerImpl, _SocketIOServer);
 
   _createClass(SocketIOServerImpl, [{
+    key: 'initPostgresql',
+    value: function initPostgresql(config) {
+      // configures postgresql database
+      var fluxSQL = config.sql;
+      _pg2['default'].defaults.poolSize = fluxSQL.poolSize;
+      _pgQuery2['default'].connectionParameters = '' + fluxSQL.type + '://' + fluxSQL.local + ':' + fluxSQL.secret + '@' + fluxSQL.host + '/' + fluxSQL.local;
+      _pgQuery2['default'].pg = _pg2['default'];
+
+      this.actionPostgresql = '' + config.macros.__ACTION__ + '' + config.macros.__VERSION__;
+      this.actionEditsPostgresql = '' + config.macros.__ACTION_EDITS__ + '' + config.macros.__VERSION__;
+      this.actionVotesPostgresql = '' + config.macros.__ACTION_VOTES__ + '' + config.macros.__VERSION__;
+      this.actionReportsPostgresql = '' + config.macros.__ACTION_REPORTS__ + '' + config.macros.__VERSION__;
+      this.actionV7V8ThreadsPostgresql = '' + config.macros.__ACTION_V7V8THREADS__ + '' + config.macros.__VERSION__;
+      this.fetchCommentsPage = '' + config.macros.__FETCH_PAGE__ + '' + config.macros.__VERSION__;
+      this.fetchCommentsReplies = '' + config.macros.__FETCH_REPLIES__ + '' + config.macros.__VERSION__;
+    }
+  }, {
     key: 'serveStore',
 
     /**
@@ -201,11 +221,11 @@ var SocketIOServerImpl = (function (_SocketIOServer) {
     * @param {String} path The requested PATH
     * @return {Object} remutable The remutable built according to the requested PATH
     */
-    value: function serveStore(_ref10) {
+    value: function serveStore(_ref11) {
       var _this2 = this;
 
-      var path = _ref10.path;
-      var originalUrl = _ref10.originalUrl;
+      var path = _ref11.path;
+      var originalUrl = _ref11.originalUrl;
 
       return Promise['try'](function () {
         if (__DEV__) {

@@ -1,5 +1,6 @@
 import redis from 'redis';
 import { Remutable } from 'nexus-flux';
+const __DEV__ = (process.env.NODE_ENV === 'development');
 
 class RedisDescriptor {
   constructor(config, fluxActions) {

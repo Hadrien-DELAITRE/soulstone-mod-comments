@@ -1,3 +1,14 @@
+require('babel/register')({
+  only: /\.jsx$/,
+  modules: 'common',
+  optional: [
+    'es7.classProperties',
+    'es7.decorators',
+    'es7.objectRestSpread',
+    'runtime',
+  ],
+});
+
 var _ = require('lodash');
 var should = require('should');
 var Promise = (global || window).Promise = require('bluebird');
@@ -29,25 +40,8 @@ function lint() {
   .pipe(eslint.format());
 }
 
-function build() {
-  return readPrelude.then(function(prelude) {
-    return gulp.src(['src/**/*.js', 'src/**/*.jsx'])
-    .pipe(plumber())
-    .pipe(prepend(prelude))
-    .pipe(babel({
-      modules: 'common',
-      optional: [
-        'runtime',
-        'es7.classProperties',
-        'es7.decorators',
-      ],
-    }))
-    .pipe(gulp.dest('dist'));
-  });
-}
-
 function test() {
-  return gulp.src('dist/**/__tests__/**/*.js')
+  return gulp.src('src/**/__tests__/**/*.jsx')
     .pipe(mocha())
     .once('error', process.exit.bind(process, 1))
     .once('end', process.exit.bind(process));
@@ -59,6 +53,6 @@ function clean() {
 
 gulp.task('lint', lint);
 gulp.task('clean', clean);
-gulp.task('build', ['lint', 'clean'], build);
-gulp.task('test', ['build'], test);
-gulp.task('default', ['build']);
+//gulp.task('build', ['lint', 'clean'], build);
+//gulp.task('test', ['build'], test);
+gulp.task('default', ['lint']);
