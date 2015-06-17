@@ -1,17 +1,12 @@
 import SocketIOServer from 'nexus-flux-socket.io/server';
+import ActionDescriptor from './actions';
+import RedisDescriptor from './redis';
 import { Remutable } from 'nexus-flux';
-import config from './config';
 import pg from 'pg';
 import query from 'pg-query';
 import pgFormat from 'pg-format';
 import Router from 'isomorphic-router';
 import morgan from 'morgan';
-
-// configures Pool Size about database connections
-const fluxSQL = config.comments['flux-sql'];
-pg.defaults.poolSize = fluxSQL.poolSize;
-query.connectionParameters = `${fluxSQL.type}://${fluxSQL.local}:${fluxSQL.secret}@${fluxSQL.host}/${fluxSQL.local}`;
-query.pg = pg;
 
 /**
 * Creates the millenium-comment-flux SocketIOServer
@@ -27,18 +22,17 @@ class SocketIOServerImpl extends SocketIOServer {
   * @constructor
   * @param {number} port The listening port
   */
-  constructor(port) {
-    const expressUse = config.logger ? [morgan(config.logger)] : [];
+  constructor({ port, postgresql, logger, sso, redis }) {
+    const expressUse = logger ? [morgan(logger)] : [];
     super(port, void 0, void 0, void 0, expressUse);
 
     // init versioning
-    this.actionPostgresql = `${config.macros.__ACTION__}${config.macros.__VERSION__}`;
-    this.actionEditsPostgresql = `${config.macros.__ACTION_EDITS__}${config.macros.__VERSION__}`;
-    this.actionVotesPostgresql = `${config.macros.__ACTION_VOTES__}${config.macros.__VERSION__}`;
-    this.actionReportsPostgresql = `${config.macros.__ACTION_REPORTS__}${config.macros.__VERSION__}`;
-    this.actionV7V8ThreadsPostgresql = `${config.macros.__ACTION_V7V8THREADS__}${config.macros.__VERSION__}`;
-    this.fetchCommentsPage = `${config.macros.__FETCH_PAGE__}${config.macros.__VERSION__}`;
-    this.fetchCommentsReplies = `${config.macros.__FETCH_REPLIES__}${config.macros.__VERSION__}`;
+    this.initPostgresql(postgresql);
+
+    const actionDescriptor = new ActionDescriptor(sso);
+    const redisDescriptor = new RedisDescriptor(redis, actionDescriptor.getActions());
+    redisDescriptor.initSubscribe(this);
+    redisDescriptor.initPublish(this);
 
     // init empty json query
     this.jsonQuery = {};
@@ -134,6 +128,22 @@ class SocketIOServerImpl extends SocketIOServer {
     this.lifespan.setInterval(() => {
       this.dispatchUpdate('/comments/clock', this.clock.set('date', Date.now()).commit());
     }, 30000);
+  }
+
+  initPostgresql(config) {
+    // configures postgresql database
+    const fluxSQL = config.sql;
+    pg.defaults.poolSize = fluxSQL.poolSize;
+    query.connectionParameters = `${fluxSQL.type}://${fluxSQL.local}:${fluxSQL.secret}@${fluxSQL.host}/${fluxSQL.local}`;
+    query.pg = pg;
+
+    this.actionPostgresql = `${config.macros.__ACTION__}${config.macros.__VERSION__}`;
+    this.actionEditsPostgresql = `${config.macros.__ACTION_EDITS__}${config.macros.__VERSION__}`;
+    this.actionVotesPostgresql = `${config.macros.__ACTION_VOTES__}${config.macros.__VERSION__}`;
+    this.actionReportsPostgresql = `${config.macros.__ACTION_REPORTS__}${config.macros.__VERSION__}`;
+    this.actionV7V8ThreadsPostgresql = `${config.macros.__ACTION_V7V8THREADS__}${config.macros.__VERSION__}`;
+    this.fetchCommentsPage = `${config.macros.__FETCH_PAGE__}${config.macros.__VERSION__}`;
+    this.fetchCommentsReplies = `${config.macros.__FETCH_REPLIES__}${config.macros.__VERSION__}`;
   }
 
   /**
